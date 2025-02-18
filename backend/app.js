@@ -6,6 +6,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const morgan = require('morgan');
+const Product = require('./models/Product');
 
 
 mongoose.connect('mongodb://127.0.0.1:27017/ecommerceKle')
@@ -97,6 +98,98 @@ app.post('/login', async (req, res) => {
     }
 });
 
+
+//task3 -> get the product
+app.get('/products', async(req,res)=>{
+    try{
+        const products = await Product.find();
+        res.status(200).json({
+            products:products
+        })
+    }catch (error) {
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+})
+
+
+//task4-> add a product
+app.post('/add-product',async(req,res)=>{
+    try{
+        const{name,price,brand,stock,image,description} = req.body;
+        await Product.create({name,price,brand,stock,image,description})
+        res.status(200).json({message:"Product created Successfully"});
+
+    }catch (error) {
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+})
+
+//task5 -> to show the particular product
+app.get('/product/:id', async(req,res)=>{
+    try{
+        const {id} = req.params;
+        if(!id){
+            res.status(400).json({message:"Product Id not found"});
+        }
+
+        const {token} = req.headers;
+
+        const userEmailFromToken = jwt.verify(token,"supersecret");
+        if(userEmailFromToken){
+            const product = await Product.findById(id);
+
+            if(!product){
+                res.status(400).json({message:"Product not found"});
+            }
+
+            res.status(200).json({message:"success",product});
+        }
+
+    }catch(error){
+        console.log(error);
+        res.status(500).json({message:"Internal server error"});
+    }
+})
+
+//task-6 update product
+app.patch("/product/edit/:id", async (req, res) => {
+    const { id } = req.params;
+    const { token } = req.headers;
+    const body = req.body.productData;
+    const name = body.name;
+    const description = body.description;
+    const image = body.image;
+    const price = body.price;
+    const brand = body.brand;
+    const stock = body.stock;
+    const userEmail = jwt.verify(token, "supersecret");
+    try {
+      console.log({
+        name,
+        description,
+        image,
+        price,
+        brand,
+        stock,
+      });
+      if (userEmail) {
+        const updatedProduct = await Product.findByIdAndUpdate(id, {
+          name,
+          description,
+          image,
+          price,
+          brand,
+          stock,
+        });
+        res.status(200).json({ message: "Product Updated Succesfully" });
+      }
+    } catch (error) {
+      res.status(400).json({
+        message: "Internal Server Error Occured While Updating Product",
+      });
+    }
+  });
+  
 
 
 let PORT = 8080;

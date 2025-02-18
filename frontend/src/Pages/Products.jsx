@@ -134,6 +134,7 @@ export default function Products() {
               <div className="p-4 flex-grow">
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">{product.name}</h3>
                 <p className="text-gray-600 text-sm line-clamp-3 mb-2">{product.description}</p>
+                <p className="text-gray-600 text-sm line-clamp-3 mb-2">{product.stock}</p>
                 <span className="text-xl font-bold text-gray-900">${product.price.toFixed(2)}</span>
               </div>
               <div className="p-4 border-t">
