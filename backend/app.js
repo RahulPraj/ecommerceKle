@@ -286,6 +286,68 @@ app.get('/cart',async(req,res)=>{
   res.status(200).json( {cart:user.cart});
 })
 
+// taks-10-> add product in cart
+app.post("/cart/add", async (req, res) => {
+  const body = req.body;
+
+  const productsArray = body.products;
+  let totalPrice = 0;
+
+  try {
+    for (const item of productsArray) {
+      const product = await Product.findById(item);
+      if (product) {
+        totalPrice += product.price;
+      }
+    }
+
+    const { token } = req.headers;
+    const decodedToken = jwt.verify(token, "supersecret");
+    const user = await User.findOne({ email: decodedToken.email });
+
+    if (!user) {
+      return res.status(404).json({ message: "User Not Found" });
+    }
+
+    let cart;
+    if (user.cart) {
+      cart = await Cart.findById(user.cart).populate("products");
+      const existingProductIds = cart.products.map((product) =>
+        product._id.toString()
+      );
+
+      productsArray.forEach(async (productId) => {
+        if (!existingProductIds.includes(productId)) {
+          cart.products.push(productId);
+          const product = await Product.findById(productId);
+          totalPrice += product.price;
+        }
+      });
+
+      cart.total = totalPrice;
+      await cart.save();
+    } else {
+      cart = new Cart({
+        products: productsArray,
+        total: totalPrice,
+      });
+
+      await cart.save();
+      user.cart = cart._id;
+      await user.save();
+    }
+
+    res.status(201).json({
+      message: "Cart Updated Successfully",
+      cart: cart,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Error Adding to Cart", error });
+  }
+});
+
+
+
 let PORT = 8080;
 app.listen(PORT,()=>{
     console.log(`server is connected to ${PORT}`);
